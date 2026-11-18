@@ -1,0 +1,12 @@
+node_modules
+*/node_modules
+.git
+.gitignore
+backups
+logs
+.backend.pid
+*.log
+.DS_Store
+.env*
+!backend/prisma/schema.prisma
+!backend/prisma/migrations

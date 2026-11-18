@@ -1,0 +1,140 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum PaymentMethod {
+  CASH
+  UPI
+  CHEQUE
+  BANK_TRANSFER
+  OTHER
+}
+
+model Area {
+  id        String     @id @default(uuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  customers Customer[]
+
+  @@map("areas")
+}
+
+model Customer {
+  id         String     @id @default(uuid())
+  name       String
+  phone      String?
+  areaId     String?
+  address    String?
+  notes      String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  area       Area?      @relation(fields: [areaId], references: [id], onDelete: SetNull)
+  deliveries Delivery[]
+
+  @@index([name])
+  @@index([phone])
+  @@index([areaId])
+  @@map("customers")
+}
+
+model Product {
+  id            String                @id @default(uuid())
+  name          String
+  size          String
+  sku           String?               @unique
+  isActive      Boolean               @default(true)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  prices        ProductPriceHistory[]
+  deliveryItems DeliveryItem[]
+
+  @@index([isActive])
+  @@index([size])
+  @@map("products")
+}
+
+model ProductPriceHistory {
+  id            String   @id @default(uuid())
+  productId     String
+  pricePaise    Int
+  effectiveFrom DateTime @default(now())
+  createdAt     DateTime @default(now())
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([productId, effectiveFrom])
+  @@map("product_price_history")
+}
+
+model Delivery {
+  id               String         @id @default(uuid())
+  customerId       String
+  deliveryDate     DateTime       @default(now())
+  outerBoxes       Int?
+  totalAmountPaise Int
+  notes            String?
+  idempotencyKey   String?        @unique
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  customer         Customer       @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  items            DeliveryItem[]
+  payments         Payment[]
+
+  @@index([customerId])
+  @@index([deliveryDate])
+  @@map("deliveries")
+}
+
+model DeliveryItem {
+  id             String   @id @default(uuid())
+  deliveryId     String
+  productId      String
+  quantity       Int
+  unitPricePaise Int
+  lineTotalPaise Int
+  delivery       Delivery @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([deliveryId])
+  @@index([productId])
+  @@map("delivery_items")
+}
+
+model Payment {
+  id          String        @id @default(uuid())
+  deliveryId  String
+  amountPaise Int
+  method      PaymentMethod
+  provider    String?
+  paymentDate DateTime      @default(now())
+  reference   String?
+  notes       String?
+  createdAt   DateTime      @default(now())
+  delivery    Delivery      @relation(fields: [deliveryId], references: [id], onDelete: Restrict)
+
+  @@index([deliveryId])
+  @@index([paymentDate])
+  @@map("payments")
+}
+
+enum UserRole {
+  ADMIN
+  STAFF
+}
+
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  passwordHash String
+  role         UserRole  @default(ADMIN)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("users")
+}
+
