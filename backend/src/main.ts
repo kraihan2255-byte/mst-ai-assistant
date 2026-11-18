@@ -59,12 +59,18 @@ async function bootstrap() {
     logger.log(`Serving frontend static SPA from: ${frontendDist}`);
     const expressApp = app.getHttpAdapter().getInstance();
     expressApp.use(express.static(frontendDist));
-    expressApp.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
-      if (req.path.startsWith('/api')) {
-        return next();
-      }
-      res.sendFile(path.join(frontendDist, 'index.html'));
-    });
+    expressApp.use(
+      (
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+      ) => {
+        if (req.method !== 'GET' || req.path.startsWith('/api')) {
+          return next();
+        }
+        res.sendFile(path.join(frontendDist, 'index.html'));
+      },
+    );
   }
 
   await app.listen(port, '0.0.0.0');
