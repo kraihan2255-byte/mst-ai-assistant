@@ -2,7 +2,7 @@
 
 This guide walks you through deploying **MST Tengapal Business Assistant** to [Railway](https://railway.com) in 5 minutes.
 
-Once deployed, the app will run **24/7 on a secure public HTTPS domain** (e.g. `https://mst-tengapal.up.railway.app`), accessible from your iPhone anywhere without needing your Mac mini or any VPN.
+Once deployed, the app will run **24/7 on a secure public HTTPS domain** (e.g. `https://mst-tengapal-app-production-13910930.up.railway.app`), accessible from your iPhone anywhere without needing your Mac mini or any VPN.
 
 ---
 
