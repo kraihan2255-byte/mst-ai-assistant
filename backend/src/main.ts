@@ -65,7 +65,10 @@ async function bootstrap() {
         res: express.Response,
         next: express.NextFunction,
       ) => {
-        if (req.method !== 'GET' || req.path.startsWith('/api')) {
+        if (
+          (req.method !== 'GET' && req.method !== 'HEAD') ||
+          req.path.startsWith('/api')
+        ) {
           return next();
         }
         res.sendFile(path.join(frontendDist, 'index.html'));
