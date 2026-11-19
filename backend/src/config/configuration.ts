@@ -65,7 +65,7 @@ export const configuration = (): AppConfig => ({
     model:
       process.env.AI_MODEL ||
       (process.env.GROQ_API_KEY
-        ? 'llama-3.3-70b-versatile'
+        ? 'qwen/qwen3.8-27b'
         : process.env.OLLAMA_MODEL || 'qwen3:4b'),
     timeoutMs: parseInt(
       process.env.AI_TIMEOUT_MS ?? process.env.OLLAMA_TIMEOUT_MS ?? '30000',
