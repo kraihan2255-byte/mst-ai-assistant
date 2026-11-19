@@ -11,7 +11,7 @@ npx prisma migrate deploy
 
 # 2. Run idempotent database seed (Malappuram areas, core products, admin user)
 echo "Ensuring foundation seed data..."
-npm run seed || echo "Seed completed or skipped."
+npx tsx prisma/seed.ts
 
 # 3. Start NestJS production server
 echo "Starting application on port ${PORT:-3000}..."

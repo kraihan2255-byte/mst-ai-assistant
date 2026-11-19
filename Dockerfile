@@ -47,6 +47,7 @@ ENV PORT=3000
 
 # Copy backend package manifests and install production dependencies
 COPY backend/package*.json ./
+COPY backend/tsconfig.json ./
 RUN npm install --omit=dev && npm cache clean --force
 
 # Copy Prisma schema and generate client
