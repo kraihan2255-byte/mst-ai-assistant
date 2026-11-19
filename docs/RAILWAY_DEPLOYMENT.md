@@ -69,7 +69,7 @@ Since Railway does not have your Mac's M4 GPU, we use **Groq** for instant, free
      | `QUICK_ACCESS_ENABLED` | `true` | *(Enables ⚡ One-Tap Quick Unlock)* |
      | `AI_PROVIDER` | `groq` | |
      | `GROQ_API_KEY` | `gsk_...` | *(The key from Step 1)* |
-     | `AI_MODEL` | `llama-3.3-70b-versatile` | |
+     | `AI_MODEL` | `qwen/qwen3.8-27b` | *(Fastest 27B model on Groq)* |
 
 5. **Generate Public Domain**:
    - Go to the **Settings** tab of your application service.
