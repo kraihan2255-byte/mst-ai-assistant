@@ -78,6 +78,32 @@ export const aiApi = {
     const res = await apiClient.post<DeliveryValidationResult>('/ai/validate-delivery', draft);
     return res.data;
   },
+  transcribeAudio: async (
+    audioBlob: Blob,
+    filename = 'recording.webm',
+  ): Promise<{ text: string }> => {
+    const formData = new FormData();
+    formData.append('file', audioBlob, filename);
+    const res = await apiClient.post<{ text: string }>('/ai/transcribe', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return res.data;
+  },
+  parseVoice: async (
+    audioBlob: Blob,
+    filename = 'recording.webm',
+  ): Promise<{ transcript: string; draft: DeliveryDraft }> => {
+    const formData = new FormData();
+    formData.append('file', audioBlob, filename);
+    const res = await apiClient.post<{ transcript: string; draft: DeliveryDraft }>(
+      '/ai/parse-voice',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      },
+    );
+    return res.data;
+  },
 };
 
 // ---------------------------------------------------------------------------

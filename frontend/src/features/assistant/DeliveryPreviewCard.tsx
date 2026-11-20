@@ -23,6 +23,11 @@ export interface DeliveryPreviewCardProps {
     customerId: string;
     outerBoxes: number | null;
     totalAmountRupees: number;
+    items?: Array<{
+      productId: string;
+      quantity: number;
+      unitPriceRupees?: number;
+    }>;
     payments: Array<{
       amountRupees: number;
       method: PaymentMethod;
@@ -137,10 +142,22 @@ export function DeliveryPreviewCard({
           ]
         : [];
 
+    const itemsToSave =
+      draft.items && draft.items.length > 0
+        ? draft.items
+            .filter((it) => it.productId && it.productId.length > 10)
+            .map((it) => ({
+              productId: it.productId!,
+              quantity: it.quantity || Number(outerBoxes) || 1,
+              unitPriceRupees: it.unit_price,
+            }))
+        : undefined;
+
     await onConfirm({
       customerId,
       outerBoxes: outerBoxes === '' ? null : Number(outerBoxes),
       totalAmountRupees: totalNum,
+      items: itemsToSave && itemsToSave.length > 0 ? itemsToSave : undefined,
       payments,
       notes: draft.notes || undefined,
     });

@@ -185,9 +185,15 @@ export function CustomerList() {
                   </div>
 
                   {customer.phone && (
-                    <div className="flex items-center gap-1.5 text-xs text-stone-600 mt-2 font-mono">
-                      <Phone className="h-3 w-3 text-stone-400" />
-                      <span>{customer.phone}</span>
+                    <div className="flex items-center gap-2 text-xs mt-2">
+                      <a
+                        href={`tel:${customer.phone}`}
+                        className="inline-flex items-center gap-1.5 text-stone-700 hover:text-brand-primary font-mono bg-stone-100/70 hover:bg-stone-200/70 px-2 py-1 rounded-lg transition-colors"
+                        title="Tap to call"
+                      >
+                        <Phone className="h-3.5 w-3.5 text-brand-primary" />
+                        <span>{customer.phone}</span>
+                      </a>
                     </div>
                   )}
 

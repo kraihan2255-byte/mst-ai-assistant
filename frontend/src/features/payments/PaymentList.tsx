@@ -126,65 +126,112 @@ export function PaymentList() {
         />
       )}
 
-      {/* Payments Table */}
+      {/* Payments Display (Mobile Cards + Desktop Table) */}
       {!isLoading && !error && filteredPayments.length > 0 && (
-        <Card padding="none">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-stone-50 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
-                <tr>
-                  <th className="px-5 py-3">Payment Date</th>
-                  <th className="px-5 py-3">Customer</th>
-                  <th className="px-5 py-3">Method & Details</th>
-                  <th className="px-5 py-3">Delivery Ref</th>
-                  <th className="px-5 py-3 text-right">Amount Received</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {filteredPayments.map((p) => (
-                  <tr key={p.id} className="hover:bg-stone-50/50 transition-colors">
-                    <td className="px-5 py-3.5 text-xs text-stone-600 font-medium">
+        <>
+          {/* Mobile Payment Cards (sm:hidden) */}
+          <div className="block sm:hidden space-y-3">
+            {filteredPayments.map((p) => (
+              <Card key={p.id} padding="md" className="bg-white border-stone-200">
+                <div className="flex items-start justify-between gap-2 pb-2 border-b border-stone-100">
+                  <div>
+                    <Link
+                      to={`/customers/${p.customerId}`}
+                      className="font-bold text-base text-brand-dark hover:text-brand-primary block"
+                    >
+                      {p.customerName}
+                    </Link>
+                    <span className="text-xs text-stone-500 font-medium">
                       {formatDate(p.paymentDate)}
-                    </td>
+                    </span>
+                  </div>
+                  <span className="font-black text-emerald-700 text-base">
+                    +{formatRupees(p.amountPaise / 100)}
+                  </span>
+                </div>
 
-                    <td className="px-5 py-3.5">
-                      <Link
-                        to={`/customers/${p.customerId}`}
-                        className="font-bold text-brand-dark hover:text-brand-primary"
-                      >
-                        {p.customerName}
-                      </Link>
-                    </td>
-
-                    <td className="px-5 py-3.5 text-xs">
-                      <span className="font-semibold text-stone-800">
-                        {p.method}
+                <div className="pt-2 flex items-center justify-between text-xs text-stone-600">
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-full bg-stone-100 font-semibold text-stone-700 text-[11px]">
+                      {p.method === 'CASH' ? '💵 Cash' : p.method === 'UPI' ? '📱 UPI' : p.method}
+                      {p.provider ? ` (${p.provider})` : ''}
+                    </span>
+                    {p.reference && (
+                      <span className="font-mono text-[10px] text-stone-400">
+                        {p.reference}
                       </span>
-                      {p.provider && (
-                        <span className="ml-1 text-stone-500">
-                          ({p.provider})
-                        </span>
-                      )}
-                      {p.reference && (
-                        <span className="block text-[11px] text-stone-400 font-mono mt-0.5">
-                          Ref: {p.reference}
-                        </span>
-                      )}
-                    </td>
+                    )}
+                  </div>
 
-                    <td className="px-5 py-3.5 text-xs text-stone-500 font-mono">
-                      #{p.deliveryId.slice(0, 8)}
-                    </td>
-
-                    <td className="px-5 py-3.5 text-right font-extrabold text-emerald-700 text-sm">
-                      {formatRupees(p.amountPaise / 100)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                  <span className="font-mono text-stone-400 text-[11px]">
+                    Deliv #{p.deliveryId.slice(0, 8)}
+                  </span>
+                </div>
+              </Card>
+            ))}
           </div>
-        </Card>
+
+          {/* Desktop Table (hidden sm:block) */}
+          <div className="hidden sm:block">
+            <Card padding="none">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-stone-50 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
+                    <tr>
+                      <th className="px-5 py-3">Payment Date</th>
+                      <th className="px-5 py-3">Customer</th>
+                      <th className="px-5 py-3">Method & Details</th>
+                      <th className="px-5 py-3">Delivery Ref</th>
+                      <th className="px-5 py-3 text-right">Amount Received</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {filteredPayments.map((p) => (
+                      <tr key={p.id} className="hover:bg-stone-50/50 transition-colors">
+                        <td className="px-5 py-3.5 text-xs text-stone-600 font-medium">
+                          {formatDate(p.paymentDate)}
+                        </td>
+
+                        <td className="px-5 py-3.5">
+                          <Link
+                            to={`/customers/${p.customerId}`}
+                            className="font-bold text-brand-dark hover:text-brand-primary"
+                          >
+                            {p.customerName}
+                          </Link>
+                        </td>
+
+                        <td className="px-5 py-3.5 text-xs">
+                          <span className="font-semibold text-stone-800">
+                            {p.method}
+                          </span>
+                          {p.provider && (
+                            <span className="ml-1 text-stone-500">
+                              ({p.provider})
+                            </span>
+                          )}
+                          {p.reference && (
+                            <span className="block text-[11px] text-stone-400 font-mono mt-0.5">
+                              Ref: {p.reference}
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-3.5 text-xs text-stone-500 font-mono">
+                          #{p.deliveryId.slice(0, 8)}
+                        </td>
+
+                        <td className="px-5 py-3.5 text-right font-extrabold text-emerald-700 text-sm">
+                          {formatRupees(p.amountPaise / 100)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        </>
       )}
     </div>
   );

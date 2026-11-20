@@ -24,6 +24,7 @@ import {
   formatDate,
   getPaymentStatusColor,
 } from '../../lib/formatters';
+import { cn } from '../../lib/utils';
 import type { Delivery } from '../../types/api';
 
 export function DeliveryList() {
@@ -117,135 +118,239 @@ export function DeliveryList() {
         />
       )}
 
-      {/* Deliveries Table */}
+      {/* Deliveries Display (Mobile Card List + Desktop Table) */}
       {!isLoading && !error && filteredDeliveries.length > 0 && (
-        <Card padding="none">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-stone-50 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
-                <tr>
-                  <th className="px-5 py-3">Delivery Date</th>
-                  <th className="px-5 py-3">Customer</th>
-                  <th className="px-5 py-3">Type & Boxes</th>
-                  <th className="px-5 py-3 text-right">Billed Amount</th>
-                  <th className="px-5 py-3 text-right">Paid</th>
-                  <th className="px-5 py-3 text-right">Outstanding</th>
-                  <th className="px-5 py-3 text-center">Status</th>
-                  <th className="px-5 py-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {filteredDeliveries.map((delivery) => {
-                  const status = getPaymentStatusColor(delivery.paymentStatus);
-                  const isUnsettled = delivery.outstandingRupees > 0;
+        <>
+          {/* Mobile Delivery Cards (sm:hidden) */}
+          <div className="block sm:hidden space-y-3">
+            {filteredDeliveries.map((delivery) => {
+              const status = getPaymentStatusColor(delivery.paymentStatus);
+              const isUnsettled = delivery.outstandingRupees > 0;
 
-                  return (
-                    <tr
-                      key={delivery.id}
-                      className="hover:bg-stone-50/50 transition-colors"
-                    >
-                      <td className="px-5 py-3.5 text-xs text-stone-600 font-medium">
+              return (
+                <Card key={delivery.id} padding="md" className="bg-white border-stone-200">
+                  <div className="flex items-start justify-between gap-2 pb-2.5 border-b border-stone-100">
+                    <div>
+                      <Link
+                        to={`/customers/${delivery.customerId}`}
+                        className="font-bold text-base text-brand-dark hover:text-brand-primary block"
+                      >
+                        {delivery.customerName}
+                      </Link>
+                      <span className="text-xs text-stone-500 font-medium">
                         {formatDate(delivery.deliveryDate)}
-                      </td>
+                      </span>
+                    </div>
+                    <span
+                      className={`shrink-0 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${status.bg} ${status.text} ${status.border}`}
+                    >
+                      {status.label}
+                    </span>
+                  </div>
 
-                      <td className="px-5 py-3.5">
-                        <Link
-                          to={`/customers/${delivery.customerId}`}
-                          className="font-bold text-brand-dark hover:text-brand-primary"
-                        >
-                          {delivery.customerName}
-                        </Link>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-xs">
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                            delivery.deliveryType === 'ITEMIZED'
-                              ? 'bg-teal-50 text-brand-primary'
-                              : 'bg-stone-100 text-stone-600'
-                          }`}
-                        >
-                          {delivery.deliveryType === 'ITEMIZED'
-                            ? `${delivery.itemsCount} Items`
-                            : 'Bulk'}
-                        </span>
-                        {delivery.outerBoxes !== null && (
-                          <span className="ml-1.5 text-stone-500">
-                            ({delivery.outerBoxes} boxes)
-                          </span>
-                        )}
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right font-bold text-brand-dark">
+                  {/* Delivery Details & Financials */}
+                  <div className="grid grid-cols-3 gap-2 py-2.5 text-xs border-b border-stone-100">
+                    <div>
+                      <span className="text-[10px] text-stone-400 block uppercase font-medium">Quantity</span>
+                      <span className="font-semibold text-stone-800">
+                        {delivery.outerBoxes !== null ? `${delivery.outerBoxes} boxes` : 'Bulk'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-stone-400 block uppercase font-medium">Total Billed</span>
+                      <span className="font-bold text-brand-dark">
                         {formatRupees(delivery.totalAmountRupees)}
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right font-semibold text-emerald-700">
-                        {formatRupees(delivery.totalPaidRupees)}
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right font-bold text-rose-600">
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-stone-400 block uppercase font-medium">Outstanding</span>
+                      <span className={cn('font-bold', isUnsettled ? 'text-rose-600' : 'text-emerald-600')}>
                         {formatRupees(delivery.outstandingRupees)}
-                      </td>
+                      </span>
+                    </div>
+                  </div>
 
-                      <td className="px-5 py-3.5 text-center">
-                        <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${status.bg} ${status.text} ${status.border}`}
+                  {/* Action Buttons for Mobile */}
+                  <div className="pt-2.5 flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedDelivery(delivery)}
+                        className="h-8 px-2 text-xs"
+                        title="View Details"
+                      >
+                        <Eye className="h-3.5 w-3.5 mr-1" /> View
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setInvoiceDelivery(delivery)}
+                        className="h-8 px-2 text-xs text-brand-primary"
+                        title="Invoice"
+                      >
+                        <FileText className="h-3.5 w-3.5 mr-1" /> Bill
+                      </Button>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => sendWhatsAppInvoice(delivery)}
+                        className="h-8 px-2 text-xs text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-semibold"
+                        title="WhatsApp Bill"
+                      >
+                        <Share2 className="h-3.5 w-3.5 mr-1" /> WhatsApp
+                      </Button>
+                      {isUnsettled && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => setPaymentDelivery(delivery)}
+                          className="h-8 px-2.5 text-xs font-bold"
                         >
-                          {status.label}
-                        </span>
-                      </td>
-
-                      <td className="px-5 py-3.5 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedDelivery(delivery)}
-                            title="View Full Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setInvoiceDelivery(delivery)}
-                            title="View / Print Invoice"
-                            className="text-brand-primary hover:bg-brand-accent/50"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </Button>
-
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => sendWhatsAppInvoice(delivery)}
-                            title="Send Bill on WhatsApp"
-                            className="text-emerald-600 hover:bg-emerald-50"
-                          >
-                            <Share2 className="h-4 w-4" />
-                          </Button>
-
-                          {isUnsettled && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setPaymentDelivery(delivery)}
-                              className="text-xs"
-                            >
-                              <Plus className="h-3 w-3 mr-1" /> Pay
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                          <Plus className="h-3 w-3 mr-0.5" /> Pay
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
           </div>
-        </Card>
+
+          {/* Desktop Table View (hidden sm:block) */}
+          <div className="hidden sm:block">
+            <Card padding="none">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-stone-50 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
+                    <tr>
+                      <th className="px-5 py-3">Delivery Date</th>
+                      <th className="px-5 py-3">Customer</th>
+                      <th className="px-5 py-3">Type & Boxes</th>
+                      <th className="px-5 py-3 text-right">Billed Amount</th>
+                      <th className="px-5 py-3 text-right">Paid</th>
+                      <th className="px-5 py-3 text-right">Outstanding</th>
+                      <th className="px-5 py-3 text-center">Status</th>
+                      <th className="px-5 py-3 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {filteredDeliveries.map((delivery) => {
+                      const status = getPaymentStatusColor(delivery.paymentStatus);
+                      const isUnsettled = delivery.outstandingRupees > 0;
+
+                      return (
+                        <tr
+                          key={delivery.id}
+                          className="hover:bg-stone-50/50 transition-colors"
+                        >
+                          <td className="px-5 py-3.5 text-xs text-stone-600 font-medium">
+                            {formatDate(delivery.deliveryDate)}
+                          </td>
+
+                          <td className="px-5 py-3.5">
+                            <Link
+                              to={`/customers/${delivery.customerId}`}
+                              className="font-bold text-brand-dark hover:text-brand-primary"
+                            >
+                              {delivery.customerName}
+                            </Link>
+                          </td>
+
+                          <td className="px-5 py-3.5 text-xs">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                                delivery.deliveryType === 'ITEMIZED'
+                                  ? 'bg-teal-50 text-brand-primary'
+                                  : 'bg-stone-100 text-stone-600'
+                              }`}
+                            >
+                              {delivery.deliveryType === 'ITEMIZED'
+                                ? `${delivery.itemsCount} Items`
+                                : 'Bulk'}
+                            </span>
+                            {delivery.outerBoxes !== null && (
+                              <span className="ml-1.5 text-stone-500">
+                                ({delivery.outerBoxes} boxes)
+                              </span>
+                            )}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right font-bold text-brand-dark">
+                            {formatRupees(delivery.totalAmountRupees)}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right font-semibold text-emerald-700">
+                            {formatRupees(delivery.totalPaidRupees)}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right font-bold text-rose-600">
+                            {formatRupees(delivery.outstandingRupees)}
+                          </td>
+
+                          <td className="px-5 py-3.5 text-center">
+                            <span
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${status.bg} ${status.text} ${status.border}`}
+                            >
+                              {status.label}
+                            </span>
+                          </td>
+
+                          <td className="px-5 py-3.5 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedDelivery(delivery)}
+                                title="View Full Details"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setInvoiceDelivery(delivery)}
+                                title="View / Print Invoice"
+                                className="text-brand-primary hover:bg-brand-accent/50"
+                              >
+                                <FileText className="h-4 w-4" />
+                              </Button>
+
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => sendWhatsAppInvoice(delivery)}
+                                title="Send Bill on WhatsApp"
+                                className="text-emerald-600 hover:bg-emerald-50"
+                              >
+                                <Share2 className="h-4 w-4" />
+                              </Button>
+
+                              {isUnsettled && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setPaymentDelivery(delivery)}
+                                  className="text-xs"
+                                >
+                                  <Plus className="h-3 w-3 mr-1" /> Pay
+                                </Button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+        </>
       )}
 
       {/* Detail Modal */}

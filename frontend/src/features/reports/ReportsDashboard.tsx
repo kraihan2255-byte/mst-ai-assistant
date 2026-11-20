@@ -111,10 +111,10 @@ export function ReportsDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl w-fit text-xs font-bold text-stone-600">
+      <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl max-w-full overflow-x-auto text-xs font-bold text-stone-600">
         <button
           onClick={() => setActiveTab('summary')}
-          className={`px-3.5 py-2 rounded-lg transition-all ${
+          className={`shrink-0 whitespace-nowrap px-3.5 py-2 rounded-lg transition-all ${
             activeTab === 'summary'
               ? 'bg-white text-brand-dark shadow-sm'
               : 'hover:text-brand-dark'
@@ -124,7 +124,7 @@ export function ReportsDashboard() {
         </button>
         <button
           onClick={() => setActiveTab('outstanding')}
-          className={`px-3.5 py-2 rounded-lg transition-all ${
+          className={`shrink-0 whitespace-nowrap px-3.5 py-2 rounded-lg transition-all ${
             activeTab === 'outstanding'
               ? 'bg-white text-brand-dark shadow-sm'
               : 'hover:text-brand-dark'
@@ -134,7 +134,7 @@ export function ReportsDashboard() {
         </button>
         <button
           onClick={() => setActiveTab('deliveries')}
-          className={`px-3.5 py-2 rounded-lg transition-all ${
+          className={`shrink-0 whitespace-nowrap px-3.5 py-2 rounded-lg transition-all ${
             activeTab === 'deliveries'
               ? 'bg-white text-brand-dark shadow-sm'
               : 'hover:text-brand-dark'
@@ -144,7 +144,7 @@ export function ReportsDashboard() {
         </button>
         <button
           onClick={() => setActiveTab('payments')}
-          className={`px-3.5 py-2 rounded-lg transition-all ${
+          className={`shrink-0 whitespace-nowrap px-3.5 py-2 rounded-lg transition-all ${
             activeTab === 'payments'
               ? 'bg-white text-brand-dark shadow-sm'
               : 'hover:text-brand-dark'
@@ -277,43 +277,70 @@ export function ReportsDashboard() {
                 />
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-stone-50 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
-                  <tr>
-                    <th className="px-5 py-3">Customer</th>
-                    <th className="px-5 py-3">Area / Phone</th>
-                    <th className="px-5 py-3 text-right">Total Invoiced</th>
-                    <th className="px-5 py-3 text-right">Total Settled</th>
-                    <th className="px-5 py-3 text-right">Outstanding Due</th>
-                    <th className="px-5 py-3 text-center">Pending Deliveries</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
+              <>
+                {/* Mobile Cards for Customer Outstanding (sm:hidden) */}
+                <div className="block sm:hidden divide-y divide-stone-100 p-3 space-y-3">
                   {outstandingList.map((item) => (
-                    <tr key={item.customerId} className="hover:bg-stone-50/50">
-                      <td className="px-5 py-3.5 font-bold text-brand-dark">
-                        {item.customerName}
-                      </td>
-                      <td className="px-5 py-3.5 text-xs text-stone-500">
-                        {item.areaName && <span>{item.areaName}</span>}
-                        {item.phone && <span> • {item.phone}</span>}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-stone-700">
-                        {formatRupees(item.totalBilledRupees)}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-emerald-700">
-                        {formatRupees(item.totalPaidRupees)}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-black text-rose-700">
-                        {formatRupees(item.outstandingRupees)}
-                      </td>
-                      <td className="px-5 py-3.5 text-center text-xs font-bold text-stone-600">
-                        {item.unpaidDeliveriesCount}
-                      </td>
-                    </tr>
+                    <div key={item.customerId} className="pt-2.5 first:pt-0 space-y-1.5 text-xs">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="font-bold text-sm text-brand-dark block">{item.customerName}</span>
+                          <span className="text-[11px] text-stone-400">
+                            {item.areaName || ''} {item.phone ? `• ${item.phone}` : ''}
+                          </span>
+                        </div>
+                        <span className="font-black text-rose-700 text-sm">
+                          {formatRupees(item.outstandingRupees)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between bg-stone-50 p-2 rounded-lg text-[11px]">
+                        <span>Billed: <strong>{formatRupees(item.totalBilledRupees)}</strong></span>
+                        <span>Paid: <strong className="text-emerald-700">{formatRupees(item.totalPaidRupees)}</strong></span>
+                        <span>Pending: <strong>{item.unpaidDeliveriesCount} orders</strong></span>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+
+                {/* Desktop Table (hidden sm:table) */}
+                <table className="hidden sm:table w-full text-left text-sm">
+                  <thead className="bg-stone-50 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
+                    <tr>
+                      <th className="px-5 py-3">Customer</th>
+                      <th className="px-5 py-3">Area / Phone</th>
+                      <th className="px-5 py-3 text-right">Total Invoiced</th>
+                      <th className="px-5 py-3 text-right">Total Settled</th>
+                      <th className="px-5 py-3 text-right">Outstanding Due</th>
+                      <th className="px-5 py-3 text-center">Pending Deliveries</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {outstandingList.map((item) => (
+                      <tr key={item.customerId} className="hover:bg-stone-50/50">
+                        <td className="px-5 py-3.5 font-bold text-brand-dark">
+                          {item.customerName}
+                        </td>
+                        <td className="px-5 py-3.5 text-xs text-stone-500">
+                          {item.areaName && <span>{item.areaName}</span>}
+                          {item.phone && <span> • {item.phone}</span>}
+                        </td>
+                        <td className="px-5 py-3.5 text-right font-semibold text-stone-700">
+                          {formatRupees(item.totalBilledRupees)}
+                        </td>
+                        <td className="px-5 py-3.5 text-right font-semibold text-emerald-700">
+                          {formatRupees(item.totalPaidRupees)}
+                        </td>
+                        <td className="px-5 py-3.5 text-right font-black text-rose-700">
+                          {formatRupees(item.outstandingRupees)}
+                        </td>
+                        <td className="px-5 py-3.5 text-center text-xs font-bold text-stone-600">
+                          {item.unpaidDeliveriesCount}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
             )}
           </div>
         </Card>
@@ -338,46 +365,71 @@ export function ReportsDashboard() {
                 />
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-stone-50 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
-                  <tr>
-                    <th className="px-5 py-3">Date</th>
-                    <th className="px-5 py-3">Customer</th>
-                    <th className="px-5 py-3 text-center">Outer Boxes</th>
-                    <th className="px-5 py-3 text-right">Billed Amount</th>
-                    <th className="px-5 py-3 text-right">Paid</th>
-                    <th className="px-5 py-3 text-right">Outstanding</th>
-                    <th className="px-5 py-3 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
+              <>
+                {/* Mobile Cards for Deliveries Ledger (sm:hidden) */}
+                <div className="block sm:hidden divide-y divide-stone-100 p-3 space-y-3">
                   {deliveriesReport.deliveries.map((d) => (
-                    <tr key={d.id} className="hover:bg-stone-50/50">
-                      <td className="px-5 py-3.5 text-xs text-stone-600 font-medium">
-                        {formatDate(d.deliveryDate)}
-                      </td>
-                      <td className="px-5 py-3.5 font-bold text-brand-dark">
-                        {d.customerName}
-                      </td>
-                      <td className="px-5 py-3.5 text-center text-xs font-semibold text-stone-700">
-                        {d.outerBoxes !== null ? d.outerBoxes : '—'}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-bold text-brand-dark">
-                        {formatRupees(d.totalAmountRupees)}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-emerald-700">
-                        {formatRupees(d.totalPaidRupees)}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-bold text-rose-700">
-                        {formatRupees(d.outstandingRupees)}
-                      </td>
-                      <td className="px-5 py-3.5 text-center text-xs font-bold">
-                        {d.paymentStatus}
-                      </td>
-                    </tr>
+                    <div key={d.id} className="pt-2.5 first:pt-0 space-y-1.5 text-xs">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="font-bold text-sm text-brand-dark block">{d.customerName}</span>
+                          <span className="text-[11px] text-stone-500">
+                            {formatDate(d.deliveryDate)} {d.outerBoxes !== null ? `• ${d.outerBoxes} boxes` : ''}
+                          </span>
+                        </div>
+                        <span className="font-bold text-brand-dark">{formatRupees(d.totalAmountRupees)}</span>
+                      </div>
+                      <div className="flex items-center justify-between bg-stone-50 p-2 rounded-lg text-[11px]">
+                        <span>Paid: <strong className="text-emerald-700">{formatRupees(d.totalPaidRupees)}</strong></span>
+                        <span>Due: <strong className={d.outstandingRupees > 0 ? 'text-rose-600' : 'text-emerald-700'}>{formatRupees(d.outstandingRupees)}</strong></span>
+                        <span className="font-semibold text-stone-600">{d.paymentStatus}</span>
+                      </div>
+                    </div>
                   ))}
-                </tbody>
-              </table>
+                </div>
+
+                {/* Desktop Table (hidden sm:table) */}
+                <table className="hidden sm:table w-full text-left text-sm">
+                  <thead className="bg-stone-50 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
+                    <tr>
+                      <th className="px-5 py-3">Date</th>
+                      <th className="px-5 py-3">Customer</th>
+                      <th className="px-5 py-3 text-center">Outer Boxes</th>
+                      <th className="px-5 py-3 text-right">Billed Amount</th>
+                      <th className="px-5 py-3 text-right">Paid</th>
+                      <th className="px-5 py-3 text-right">Outstanding</th>
+                      <th className="px-5 py-3 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {deliveriesReport.deliveries.map((d) => (
+                      <tr key={d.id} className="hover:bg-stone-50/50">
+                        <td className="px-5 py-3.5 text-xs text-stone-600 font-medium">
+                          {formatDate(d.deliveryDate)}
+                        </td>
+                        <td className="px-5 py-3.5 font-bold text-brand-dark">
+                          {d.customerName}
+                        </td>
+                        <td className="px-5 py-3.5 text-center text-xs font-semibold text-stone-700">
+                          {d.outerBoxes !== null ? d.outerBoxes : '—'}
+                        </td>
+                        <td className="px-5 py-3.5 text-right font-bold text-brand-dark">
+                          {formatRupees(d.totalAmountRupees)}
+                        </td>
+                        <td className="px-5 py-3.5 text-right font-semibold text-emerald-700">
+                          {formatRupees(d.totalPaidRupees)}
+                        </td>
+                        <td className="px-5 py-3.5 text-right font-bold text-rose-700">
+                          {formatRupees(d.outstandingRupees)}
+                        </td>
+                        <td className="px-5 py-3.5 text-center text-xs font-bold">
+                          {d.paymentStatus}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </>
             )}
           </div>
         </Card>

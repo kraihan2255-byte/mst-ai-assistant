@@ -644,4 +644,95 @@ Return ONLY a valid JSON object matching this schema:
       notes,
     };
   }
+
+  /**
+   * Transcribes an uploaded audio recording into text using Whisper Large v3.
+   * Optimized with Malayalam and Kerala local vocabulary prompts.
+   */
+  async transcribeAudio(
+    fileBuffer: Buffer,
+    mimeType: string,
+    originalFilename = 'audio.webm',
+  ): Promise<string> {
+    const apiKey =
+      this.apiKey ||
+      this.configService.get<string>('ai.apiKey') ||
+      process.env.GROQ_API_KEY ||
+      '';
+
+    if (!apiKey) {
+      throw new ServiceUnavailableException(
+        'Speech-to-text audio transcription requires a Groq API key (GROQ_API_KEY).',
+      );
+    }
+
+    const form = new FormData();
+    const blob = new Blob([new Uint8Array(fileBuffer)], {
+      type: mimeType || 'audio/webm',
+    });
+    form.append('file', blob, originalFilename || 'recording.webm');
+    form.append('model', 'whisper-large-v3-turbo');
+    form.append(
+      'prompt',
+      'MST Tengapal, Coconut Milk, Coconut Milk 1kg, 500g, 200ml, Malappuram, Manjeri, Tirur, Perinthalmanna, Kottakkal, Kondotty, Ponnani, Parappanangadi, Tanur, Valanchery, Nilambur, Edappal, Areekode, Wandoor, boxes, packet, cash, GPay, UPI',
+    );
+    form.append('temperature', '0');
+
+    try {
+      const response = await fetch(
+        'https://api.groq.com/openai/v1/audio/transcriptions',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: form,
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        this.logger.error(
+          `Whisper transcription failed: ${response.status} ${errorText}`,
+        );
+        throw new BadGatewayException(
+          `Audio transcription service error (${response.status}): ${errorText}`,
+        );
+      }
+
+      const data = (await response.json()) as { text?: string };
+      const transcript = (data.text || '').trim();
+      this.logger.log(
+        `Transcribed audio (${fileBuffer.length} bytes): "${transcript}"`,
+      );
+      return transcript;
+    } catch (err: unknown) {
+      if (
+        err instanceof BadGatewayException ||
+        err instanceof ServiceUnavailableException
+      ) {
+        throw err;
+      }
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to transcribe audio: ${message}`);
+      throw new BadGatewayException(`Audio transcription failed: ${message}`);
+    }
+  }
+
+  /**
+   * Transcribes voice audio and immediately extracts delivery structure in one step.
+   */
+  async parseVoiceCommand(
+    fileBuffer: Buffer,
+    mimeType: string,
+    originalFilename = 'audio.webm',
+  ): Promise<{ transcript: string; draft: EnhancedDeliveryDraft }> {
+    const transcript = await this.transcribeAudio(
+      fileBuffer,
+      mimeType,
+      originalFilename,
+    );
+    const draft = await this.parseDeliveryCommand(transcript);
+    return { transcript, draft };
+  }
 }

@@ -125,6 +125,7 @@ export interface PaymentItemDraft {
 }
 
 export interface DeliveryItemDraft {
+  productId?: string;
   product_name?: string;
   size?: string;
   quantity?: number;

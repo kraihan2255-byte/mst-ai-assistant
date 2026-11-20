@@ -8,10 +8,13 @@ import {
   HelpCircle,
   FileText,
   Share2,
+  Package,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { DeliveryPreviewCard } from './DeliveryPreviewCard';
 import { CustomerSelectionCard } from './CustomerSelectionCard';
+import { QuickDeliveryBuilder } from './QuickDeliveryBuilder';
+import { VoiceRecorderButton } from './VoiceRecorderButton';
 import { InvoiceModal } from '../invoices/InvoiceModal';
 import { sendWhatsAppInvoice } from '../invoices/whatsapp-invoice';
 import { useToast } from '../../components/ui/toast';
@@ -25,7 +28,6 @@ const EXAMPLE_PROMPTS = [
   'I delivered 10 boxes to ABC Catering for 5000 rupees and received 2000 through GPay.',
   'Delivered 5 boxes to Modern Bakers for 3000 rupees in cash.',
   'Delivered 8 boxes to Kerala Supermarket for 4000 rupees, no payment yet.',
-  'Who owes me money?',
 ];
 
 export function AssistantChat() {
@@ -34,12 +36,14 @@ export function AssistantChat() {
 
   const [inputMessage, setInputMessage] = useState('');
   const [isParsing, setIsParsing] = useState(false);
+  const [voiceTranscribing, setVoiceTranscribing] = useState(false);
+  const [showQuickBuilder, setShowQuickBuilder] = useState(false);
   const [selectedInvoiceDelivery, setSelectedInvoiceDelivery] = useState<Delivery | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
       role: 'assistant',
-      text: 'Hello! I am your MST Tengapal business assistant. Speak or type your deliveries and payments in plain English. For example:\n\n"I delivered 10 boxes to ABC Catering for 5000 rupees and received 2000 through GPay."',
+      text: 'Hello! I am your MST Tengapal business assistant. Tap 🎙️ Voice to speak in Malayalam or English, type your delivery, or tap "Delivered (Quick Select)" below to choose boxes, customer, and payment from a list.',
       timestamp: new Date(),
     },
   ]);
@@ -155,6 +159,81 @@ export function AssistantChat() {
     }
   };
 
+  // Handle recorded voice audio
+  const handleAudioRecorded = async (audioBlob: Blob, filename: string) => {
+    setIsParsing(true);
+    setVoiceTranscribing(true);
+
+    try {
+      const result = await aiApi.parseVoice(audioBlob, filename);
+      const transcript = result.transcript;
+      const draft = result.draft;
+
+      // Append user voice message
+      const userMsgId = `user-voice-${Date.now()}`;
+      const userMessage: ChatMessage = {
+        id: userMsgId,
+        role: 'user',
+        text: `🎙️ "${transcript}"`,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, userMessage]);
+
+      if (draft.action === 'record_delivery') {
+        const assistantMsgId = `assistant-${Date.now()}`;
+
+        if (
+          draft.requires_customer_selection &&
+          draft.candidate_customers &&
+          draft.candidate_customers.length > 1
+        ) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: assistantMsgId,
+              role: 'assistant',
+              text: `I heard: "${transcript}"\nI found ${draft.candidate_customers?.length} matching customers for "${draft.recipient_name}". Which one did you deliver to?`,
+              timestamp: new Date(),
+              draft,
+              requiresSelection: true,
+              candidates: draft.candidate_customers,
+            },
+          ]);
+        } else {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: assistantMsgId,
+              role: 'assistant',
+              text: `I understood your voice delivery: "${transcript}". Please review the details below:`,
+              timestamp: new Date(),
+              draft,
+              requiresSelection: false,
+            },
+          ]);
+        }
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `assistant-${Date.now()}`,
+            role: 'assistant',
+            text: `Transcribed: "${transcript}"\n\nI could not find a delivery action in this voice note. Please speak a sentence like:\n"Al Madina Hotel Manjeri 10 packet 1kg 500 cash"`,
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    } catch (err: unknown) {
+      const errMsg =
+        err instanceof Error ? err.message : 'Failed to process voice note.';
+      toast.error(errMsg, 'Voice Assistant Error');
+    } finally {
+      setIsParsing(false);
+      setVoiceTranscribing(false);
+    }
+  };
+
   // Handle selecting an ambiguous customer candidate
   const handleSelectCustomer = (
     messageId: string,
@@ -188,6 +267,11 @@ export function AssistantChat() {
       customerId: string;
       outerBoxes: number | null;
       totalAmountRupees: number;
+      items?: Array<{
+        productId: string;
+        quantity: number;
+        unitPriceRupees?: number;
+      }>;
       payments: Array<{
         amountRupees: number;
         method: PaymentMethod;
@@ -202,6 +286,7 @@ export function AssistantChat() {
         customerId: finalData.customerId,
         outerBoxes: finalData.outerBoxes,
         totalAmountRupees: finalData.totalAmountRupees,
+        items: finalData.items,
         payments: finalData.payments,
         notes: finalData.notes,
         idempotencyKey,
@@ -261,6 +346,32 @@ export function AssistantChat() {
     );
   };
 
+  // Handle draft created via guided QuickDeliveryBuilder
+  const handleDraftCreatedFromBuilder = (
+    draft: DeliveryDraft,
+    commandSummary: string,
+  ) => {
+    const userMsgId = `user-${Date.now()}`;
+    const userMessage: ChatMessage = {
+      id: userMsgId,
+      role: 'user',
+      text: commandSummary,
+      timestamp: new Date(),
+    };
+
+    const assistantMsgId = `assistant-${Date.now()}`;
+    const assistantMessage: ChatMessage = {
+      id: assistantMsgId,
+      role: 'assistant',
+      text: `I've prepared a draft for your delivery to "${draft.recipient_name}". Please review and confirm before saving:`,
+      timestamp: new Date(),
+      draft,
+    };
+
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+    setShowQuickBuilder(false);
+  };
+
   const clearChat = () => {
     setMessages([
       {
@@ -280,9 +391,9 @@ export function AssistantChat() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8.5rem)] max-w-4xl mx-auto rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-10rem)] sm:h-[calc(100vh-8.5rem)] max-w-4xl mx-auto rounded-none sm:rounded-2xl border-0 sm:border border-stone-200 bg-white shadow-sm overflow-hidden">
       {/* Chat Header */}
-      <div className="flex items-center justify-between px-6 py-3.5 border-b border-stone-100 bg-stone-50/50">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-3.5 border-b border-stone-100 bg-stone-50/50">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-brand-primary text-white flex items-center justify-center shadow-sm">
             <Bot className="h-5 w-5" />
@@ -412,7 +523,11 @@ export function AssistantChat() {
             </div>
             <div className="p-3.5 rounded-2xl bg-white border border-stone-200 shadow-sm flex items-center gap-2 text-xs text-stone-500 font-medium">
               <span className="inline-block h-2 w-2 rounded-full bg-brand-primary animate-ping" />
-              <span>Analyzing command with Qwen3...</span>
+              <span>
+                {voiceTranscribing
+                  ? 'Transcribing voice note with Whisper Large v3...'
+                  : 'Analyzing command with Qwen3...'}
+              </span>
             </div>
           </div>
         )}
@@ -420,8 +535,41 @@ export function AssistantChat() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Suggested Quick Prompts */}
+      {/* Quick Delivery Guided Builder (Bottom Sheet on Mobile, Centered Modal on Desktop) */}
+      {showQuickBuilder && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div
+            className="fixed inset-0 bg-stone-900/50 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowQuickBuilder(false)}
+            aria-hidden="true"
+          />
+          <div className="relative w-full sm:max-w-xl bg-white rounded-t-[1.75rem] sm:rounded-2xl p-5 sm:p-6 shadow-2xl border-t sm:border border-stone-100 max-h-[90dvh] sm:max-h-[85vh] overflow-y-auto animate-in fade-in slide-in-from-bottom-5 duration-200 sm:slide-in-from-bottom-0 sm:zoom-in-95 pb-[calc(1.5rem+env(safe-area-inset-bottom))] sm:pb-6 z-10">
+            <div className="w-12 h-1.5 bg-stone-300 rounded-full mx-auto mb-3.5 sm:hidden" />
+            <QuickDeliveryBuilder
+              onDraftCreated={handleDraftCreatedFromBuilder}
+              onClose={() => setShowQuickBuilder(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Suggested Quick Prompts & Guided Builder Trigger */}
       <div className="px-4 py-2 border-t border-stone-100 bg-white flex items-center gap-2 overflow-x-auto text-xs">
+        <button
+          type="button"
+          onClick={() => setShowQuickBuilder((prev) => !prev)}
+          className={`shrink-0 px-2.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm border ${
+            showQuickBuilder
+              ? 'bg-brand-primary text-white border-brand-primary'
+              : 'bg-teal-50 hover:bg-teal-100 text-teal-800 border-teal-200'
+          }`}
+        >
+          <Package className="h-3.5 w-3.5" />
+          <span>{showQuickBuilder ? 'Close Builder' : 'Delivered (Quick Select)'}</span>
+        </button>
+
+        <span className="text-stone-300">|</span>
+
         <span className="text-stone-400 font-medium shrink-0 flex items-center gap-1">
           <HelpCircle className="h-3 w-3" /> Try:
         </span>
@@ -457,6 +605,12 @@ export function AssistantChat() {
               className="w-full rounded-xl border border-stone-300 bg-stone-50/50 px-3.5 py-2.5 text-sm text-brand-dark placeholder:text-stone-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-brand-primary resize-none transition-colors"
             />
           </div>
+
+          <VoiceRecorderButton
+            onAudioRecorded={handleAudioRecorded}
+            disabled={isParsing}
+            isProcessing={voiceTranscribing}
+          />
 
           <Button
             type="submit"

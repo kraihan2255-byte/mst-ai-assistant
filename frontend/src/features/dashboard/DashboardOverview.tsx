@@ -194,71 +194,106 @@ export function DashboardOverview() {
                 />
               </div>
             ) : (
-              <table className="w-full text-left text-sm">
-                <thead className="bg-stone-50/70 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
-                  <tr>
-                    <th className="px-5 py-3">Customer</th>
-                    <th className="px-5 py-3">Date</th>
-                    <th className="px-5 py-3">Type</th>
-                    <th className="px-5 py-3 text-right">Billed</th>
-                    <th className="px-5 py-3 text-right">Paid</th>
-                    <th className="px-5 py-3 text-right">Outstanding</th>
-                    <th className="px-5 py-3 text-center">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-stone-100">
+              <>
+                {/* Mobile Recent Deliveries (sm:hidden) */}
+                <div className="block sm:hidden divide-y divide-stone-100 p-3 space-y-3">
                   {recentDeliveries.slice(0, 6).map((delivery) => {
                     const status = getPaymentStatusColor(delivery.paymentStatus);
                     return (
-                      <tr
-                        key={delivery.id}
-                        className="hover:bg-stone-50/50 transition-colors"
-                      >
-                        <td className="px-5 py-3.5 font-bold text-brand-dark">
-                          {delivery.customerName}
-                          {delivery.outerBoxes !== null && (
-                            <span className="block text-xs font-normal text-stone-500">
-                              {delivery.outerBoxes} boxes
+                      <div key={delivery.id} className="pt-2.5 first:pt-0 space-y-1.5">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="font-bold text-sm text-brand-dark block">
+                              {delivery.customerName}
                             </span>
-                          )}
-                        </td>
-                        <td className="px-5 py-3.5 text-stone-600 text-xs">
-                          {formatDate(delivery.deliveryDate)}
-                        </td>
-                        <td className="px-5 py-3.5">
+                            <span className="text-xs text-stone-500">
+                              {formatDate(delivery.deliveryDate)}
+                              {delivery.outerBoxes !== null ? ` • ${delivery.outerBoxes} boxes` : ''}
+                            </span>
+                          </div>
                           <span
-                            className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                              delivery.deliveryType === 'ITEMIZED'
-                                ? 'bg-teal-50 text-brand-primary'
-                                : 'bg-stone-100 text-stone-600'
-                            }`}
-                          >
-                            {delivery.deliveryType === 'ITEMIZED'
-                              ? `${delivery.itemsCount} Items`
-                              : 'Non-Itemized'}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3.5 text-right font-semibold text-brand-dark">
-                          {formatRupees(delivery.totalAmountRupees)}
-                        </td>
-                        <td className="px-5 py-3.5 text-right text-emerald-700 font-semibold">
-                          {formatRupees(delivery.totalPaidRupees)}
-                        </td>
-                        <td className="px-5 py-3.5 text-right font-bold text-brand-dark">
-                          {formatRupees(delivery.outstandingRupees)}
-                        </td>
-                        <td className="px-5 py-3.5 text-center">
-                          <span
-                            className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${status.bg} ${status.text} ${status.border}`}
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${status.bg} ${status.text} ${status.border}`}
                           >
                             {status.label}
                           </span>
-                        </td>
-                      </tr>
+                        </div>
+                        <div className="flex items-center justify-between text-xs bg-stone-50 p-2 rounded-lg font-medium">
+                          <span className="text-stone-500">Billed: <strong className="text-brand-dark">{formatRupees(delivery.totalAmountRupees)}</strong></span>
+                          <span className="text-stone-500">Paid: <strong className="text-emerald-700">{formatRupees(delivery.totalPaidRupees)}</strong></span>
+                          <span className="text-stone-500">Due: <strong className="text-rose-600">{formatRupees(delivery.outstandingRupees)}</strong></span>
+                        </div>
+                      </div>
                     );
                   })}
-                </tbody>
-              </table>
+                </div>
+
+                {/* Desktop Table View (hidden sm:table) */}
+                <table className="hidden sm:table w-full text-left text-sm">
+                  <thead className="bg-stone-50/70 text-[11px] font-bold uppercase tracking-wider text-stone-500 border-b border-stone-100">
+                    <tr>
+                      <th className="px-5 py-3">Customer</th>
+                      <th className="px-5 py-3">Date</th>
+                      <th className="px-5 py-3">Type</th>
+                      <th className="px-5 py-3 text-right">Billed</th>
+                      <th className="px-5 py-3 text-right">Paid</th>
+                      <th className="px-5 py-3 text-right">Outstanding</th>
+                      <th className="px-5 py-3 text-center">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {recentDeliveries.slice(0, 6).map((delivery) => {
+                      const status = getPaymentStatusColor(delivery.paymentStatus);
+                      return (
+                        <tr
+                          key={delivery.id}
+                          className="hover:bg-stone-50/50 transition-colors"
+                        >
+                          <td className="px-5 py-3.5 font-bold text-brand-dark">
+                            {delivery.customerName}
+                            {delivery.outerBoxes !== null && (
+                              <span className="block text-xs font-normal text-stone-500">
+                                {delivery.outerBoxes} boxes
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5 text-stone-600 text-xs">
+                            {formatDate(delivery.deliveryDate)}
+                          </td>
+                          <td className="px-5 py-3.5">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
+                                delivery.deliveryType === 'ITEMIZED'
+                                  ? 'bg-teal-50 text-brand-primary'
+                                  : 'bg-stone-100 text-stone-600'
+                              }`}
+                            >
+                              {delivery.deliveryType === 'ITEMIZED'
+                                ? `${delivery.itemsCount} Items`
+                                : 'Non-Itemized'}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3.5 text-right font-semibold text-brand-dark">
+                            {formatRupees(delivery.totalAmountRupees)}
+                          </td>
+                          <td className="px-5 py-3.5 text-right text-emerald-700 font-semibold">
+                            {formatRupees(delivery.totalPaidRupees)}
+                          </td>
+                          <td className="px-5 py-3.5 text-right font-bold text-brand-dark">
+                            {formatRupees(delivery.outstandingRupees)}
+                          </td>
+                          <td className="px-5 py-3.5 text-center">
+                            <span
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${status.bg} ${status.text} ${status.border}`}
+                            >
+                              {status.label}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </>
             )}
           </div>
         </Card>
