@@ -18,8 +18,13 @@ echo "=========================================================="
 # 1. Verify PostgreSQL is running
 PSQL_BIN="$(which psql || echo "/opt/homebrew/opt/postgresql@17/bin/psql")"
 if ! "${PSQL_BIN}" -d mst_tengapal -c "SELECT 1;" > /dev/null 2>&1; then
-  echo "❌ PostgreSQL is not running. Starting Homebrew service..."
-  brew services start postgresql@17
+  echo "❌ PostgreSQL is not running. Checking service and lock files..."
+  # Clean up stale postmaster.pid if process is dead
+  if [ -f "/opt/homebrew/var/postgresql@17/postmaster.pid" ] && ! pgrep -x "postgres" > /dev/null 2>&1; then
+    echo "Clearing stale postmaster.pid lock..."
+    rm -f "/opt/homebrew/var/postgresql@17/postmaster.pid"
+  fi
+  brew services restart postgresql@17 || brew services start postgresql@17
   sleep 2
 fi
 
