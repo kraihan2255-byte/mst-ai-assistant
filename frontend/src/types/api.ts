@@ -93,6 +93,7 @@ export interface Payment {
 
 export interface Delivery {
   id: string;
+  invoiceNumber?: string;
   customerId: string;
   customerName: string;
   deliveryDate: string;

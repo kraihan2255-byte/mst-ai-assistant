@@ -9,6 +9,7 @@ import {
   Truck,
   Plus,
   CheckCircle2,
+  Share2,
 } from 'lucide-react';
 import { Card, CardTitle } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -16,6 +17,8 @@ import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { EmptyState } from '../../components/common/EmptyState';
 import { RecordPaymentModal } from '../payments/RecordPaymentModal';
+import { InvoiceModal } from '../invoices/InvoiceModal';
+import { sendWhatsAppInvoice } from '../invoices/whatsapp-invoice';
 import {
   useCustomer,
   useCustomerBalance,
@@ -36,6 +39,7 @@ export function CustomerDetail() {
   const { data: deliveries = [], isLoading: isDeliveriesLoading } = useCustomerDeliveries(id);
 
   const [paymentDelivery, setPaymentDelivery] = useState<Delivery | null>(null);
+  const [invoiceDelivery, setInvoiceDelivery] = useState<Delivery | null>(null);
 
   const isLoading = isCustomerLoading || isBalanceLoading || isDeliveriesLoading;
 
@@ -268,20 +272,42 @@ export function CustomerDetail() {
                       </td>
 
                       <td className="px-5 py-3.5 text-right">
-                        {isUnsettled ? (
+                        <div className="flex items-center justify-end gap-1.5">
                           <Button
-                            onClick={() => setPaymentDelivery(delivery)}
-                            variant="primary"
+                            variant="ghost"
                             size="sm"
+                            onClick={() => setInvoiceDelivery(delivery)}
+                            title="View / Print Invoice"
+                            className="text-brand-primary hover:bg-brand-accent/50"
                           >
-                            <Plus className="h-3.5 w-3.5 mr-1" />
-                            Record Payment
+                            <FileText className="h-4 w-4" />
                           </Button>
-                        ) : (
-                          <span className="text-xs text-emerald-700 font-semibold inline-flex items-center gap-1">
-                            <CheckCircle2 className="h-4 w-4" /> Settled
-                          </span>
-                        )}
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => sendWhatsAppInvoice(delivery)}
+                            title="Send Bill on WhatsApp"
+                            className="text-emerald-600 hover:bg-emerald-50"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+
+                          {isUnsettled ? (
+                            <Button
+                              onClick={() => setPaymentDelivery(delivery)}
+                              variant="primary"
+                              size="sm"
+                              className="text-xs"
+                            >
+                              <Plus className="h-3 w-3 mr-1" /> Pay
+                            </Button>
+                          ) : (
+                            <span className="text-xs text-emerald-700 font-semibold inline-flex items-center gap-1 px-1.5">
+                              <CheckCircle2 className="h-3.5 w-3.5" /> Paid
+                            </span>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -298,6 +324,15 @@ export function CustomerDetail() {
           isOpen={Boolean(paymentDelivery)}
           onClose={() => setPaymentDelivery(null)}
           delivery={paymentDelivery}
+        />
+      )}
+
+      {/* Invoice Modal */}
+      {invoiceDelivery && (
+        <InvoiceModal
+          isOpen={Boolean(invoiceDelivery)}
+          onClose={() => setInvoiceDelivery(null)}
+          delivery={invoiceDelivery}
         />
       )}
     </div>

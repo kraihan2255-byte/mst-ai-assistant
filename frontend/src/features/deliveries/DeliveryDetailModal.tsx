@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Modal } from '../../components/ui/modal';
 import { Button } from '../../components/ui/button';
 import { RecordPaymentModal } from '../payments/RecordPaymentModal';
+import { InvoiceModal } from '../invoices/InvoiceModal';
+import { sendWhatsAppInvoice } from '../invoices/whatsapp-invoice';
 import {
   formatRupees,
   formatDate,
@@ -9,7 +11,7 @@ import {
   getPaymentStatusColor,
 } from '../../lib/formatters';
 import type { Delivery } from '../../types/api';
-import { Plus } from 'lucide-react';
+import { Plus, FileText, Share2 } from 'lucide-react';
 
 export interface DeliveryDetailModalProps {
   isOpen: boolean;
@@ -23,6 +25,7 @@ export function DeliveryDetailModal({
   delivery,
 }: DeliveryDetailModalProps) {
   const [isRecordPaymentOpen, setIsRecordPaymentOpen] = useState(false);
+  const [isInvoiceOpen, setIsInvoiceOpen] = useState(false);
 
   if (!delivery) return null;
 
@@ -192,10 +195,28 @@ export function DeliveryDetailModal({
           </div>
 
           {/* Actions */}
-          <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
-            <Button variant="ghost" onClick={onClose} size="sm">
-              Close
-            </Button>
+          <div className="pt-3 border-t border-stone-100 flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" onClick={onClose} size="sm">
+                Close
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsInvoiceOpen(true)}
+                className="font-bold text-brand-dark"
+              >
+                <FileText className="h-4 w-4 mr-1 text-brand-primary" /> View Invoice
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => sendWhatsAppInvoice(delivery)}
+                className="text-emerald-700 font-bold hover:bg-emerald-50"
+              >
+                <Share2 className="h-4 w-4 mr-1 text-emerald-600" /> WhatsApp
+              </Button>
+            </div>
 
             {isUnsettled && (
               <Button
@@ -203,12 +224,21 @@ export function DeliveryDetailModal({
                 size="sm"
                 onClick={() => setIsRecordPaymentOpen(true)}
               >
-                <Plus className="h-4 w-4 mr-1" /> Record Additional Payment
+                <Plus className="h-4 w-4 mr-1" /> Record Payment
               </Button>
             )}
           </div>
         </div>
       </Modal>
+
+      {/* Invoice Modal */}
+      {isInvoiceOpen && (
+        <InvoiceModal
+          isOpen={isInvoiceOpen}
+          onClose={() => setIsInvoiceOpen(false)}
+          delivery={delivery}
+        />
+      )}
 
       {/* Record Payment Submodal */}
       {isRecordPaymentOpen && (

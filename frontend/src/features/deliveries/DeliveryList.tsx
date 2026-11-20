@@ -6,6 +6,8 @@ import {
   Plus,
   Eye,
   Bot,
+  FileText,
+  Share2,
 } from 'lucide-react';
 import { Card } from '../../components/ui/card';
 import { Button } from '../../components/ui/button';
@@ -14,6 +16,8 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { ErrorBanner } from '../../components/common/ErrorBanner';
 import { DeliveryDetailModal } from './DeliveryDetailModal';
 import { RecordPaymentModal } from '../payments/RecordPaymentModal';
+import { InvoiceModal } from '../invoices/InvoiceModal';
+import { sendWhatsAppInvoice } from '../invoices/whatsapp-invoice';
 import { useDeliveries } from '../../hooks/use-deliveries';
 import {
   formatRupees,
@@ -27,6 +31,7 @@ export function DeliveryList() {
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedDelivery, setSelectedDelivery] = useState<Delivery | null>(null);
   const [paymentDelivery, setPaymentDelivery] = useState<Delivery | null>(null);
+  const [invoiceDelivery, setInvoiceDelivery] = useState<Delivery | null>(null);
 
   const { data: deliveries = [], isLoading, error, refetch } = useDeliveries({
     paymentStatus: statusFilter || undefined,
@@ -202,6 +207,26 @@ export function DeliveryList() {
                             <Eye className="h-4 w-4" />
                           </Button>
 
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setInvoiceDelivery(delivery)}
+                            title="View / Print Invoice"
+                            className="text-brand-primary hover:bg-brand-accent/50"
+                          >
+                            <FileText className="h-4 w-4" />
+                          </Button>
+
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => sendWhatsAppInvoice(delivery)}
+                            title="Send Bill on WhatsApp"
+                            className="text-emerald-600 hover:bg-emerald-50"
+                          >
+                            <Share2 className="h-4 w-4" />
+                          </Button>
+
                           {isUnsettled && (
                             <Button
                               variant="outline"
@@ -236,6 +261,15 @@ export function DeliveryList() {
           isOpen={Boolean(paymentDelivery)}
           onClose={() => setPaymentDelivery(null)}
           delivery={paymentDelivery}
+        />
+      )}
+
+      {/* Invoice Modal */}
+      {invoiceDelivery && (
+        <InvoiceModal
+          isOpen={Boolean(invoiceDelivery)}
+          onClose={() => setInvoiceDelivery(null)}
+          delivery={invoiceDelivery}
         />
       )}
     </div>

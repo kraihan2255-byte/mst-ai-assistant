@@ -73,6 +73,7 @@ model ProductPriceHistory {
 
 model Delivery {
   id               String         @id @default(uuid())
+  invoiceNumber    String?        @unique
   customerId       String
   deliveryDate     DateTime       @default(now())
   outerBoxes       Int?

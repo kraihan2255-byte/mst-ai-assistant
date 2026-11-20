@@ -6,16 +6,20 @@ import {
   Sparkles,
   Trash2,
   HelpCircle,
+  FileText,
+  Share2,
 } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { DeliveryPreviewCard } from './DeliveryPreviewCard';
 import { CustomerSelectionCard } from './CustomerSelectionCard';
+import { InvoiceModal } from '../invoices/InvoiceModal';
+import { sendWhatsAppInvoice } from '../invoices/whatsapp-invoice';
 import { useToast } from '../../components/ui/toast';
 import { aiApi } from '../../lib/api-client';
 import { useConfirmDelivery } from '../../hooks/use-deliveries';
 import { formatDateTime, formatRupees } from '../../lib/formatters';
 import type { ChatMessage } from './types';
-import type { DeliveryDraft, MatchedCustomerSummary, PaymentMethod } from '../../types/api';
+import type { DeliveryDraft, Delivery, MatchedCustomerSummary, PaymentMethod } from '../../types/api';
 
 const EXAMPLE_PROMPTS = [
   'I delivered 10 boxes to ABC Catering for 5000 rupees and received 2000 through GPay.',
@@ -30,6 +34,7 @@ export function AssistantChat() {
 
   const [inputMessage, setInputMessage] = useState('');
   const [isParsing, setIsParsing] = useState(false);
+  const [selectedInvoiceDelivery, setSelectedInvoiceDelivery] = useState<Delivery | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 'welcome',
@@ -368,6 +373,29 @@ export function AssistantChat() {
                   />
                 )}
 
+                {/* Saved Delivery Quick Actions (Invoice & WhatsApp) */}
+                {msg.delivery && (
+                  <div className="flex flex-wrap items-center gap-2 p-2 rounded-xl bg-stone-50 border border-stone-200 mt-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setSelectedInvoiceDelivery(msg.delivery!)}
+                      className="text-xs h-7.5 font-bold text-brand-dark bg-white"
+                    >
+                      <FileText className="h-3.5 w-3.5 mr-1 text-brand-primary" /> View Invoice
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => sendWhatsAppInvoice(msg.delivery!)}
+                      className="text-xs h-7.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                    >
+                      <Share2 className="h-3.5 w-3.5 mr-1" /> WhatsApp Bill
+                    </Button>
+                  </div>
+                )}
+
                 <span className="text-[10px] text-stone-400 px-1">
                   {formatDateTime(msg.timestamp)}
                 </span>
@@ -445,6 +473,15 @@ export function AssistantChat() {
           Press <kbd className="px-1 py-0.5 rounded bg-stone-100 border">Enter</kbd> to send, <kbd className="px-1 py-0.5 rounded bg-stone-100 border">Shift + Enter</kbd> for new line. AI never saves without confirmation.
         </p>
       </div>
+
+      {/* Invoice Modal */}
+      {selectedInvoiceDelivery && (
+        <InvoiceModal
+          isOpen={Boolean(selectedInvoiceDelivery)}
+          onClose={() => setSelectedInvoiceDelivery(null)}
+          delivery={selectedInvoiceDelivery}
+        />
+      )}
     </div>
   );
 }

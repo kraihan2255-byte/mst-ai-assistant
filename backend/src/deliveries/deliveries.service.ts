@@ -15,6 +15,7 @@ import type {
 import { ConfirmDeliveryDto } from './dto/confirm-delivery.dto.js';
 import { RecordPaymentDto } from './dto/record-payment.dto.js';
 import type {
+  Area,
   Customer,
   Delivery,
   DeliveryItem,
@@ -22,8 +23,11 @@ import type {
   Product,
 } from '@prisma/client';
 
+export type CustomerWithArea = Customer & { area?: Area | null };
+
 export interface DeliveryDetailResponse {
   id: string;
+  invoiceNumber: string;
   customerId: string;
   customerName: string;
   deliveryDate: Date;
@@ -206,7 +210,7 @@ export class DeliveriesService {
       const existing = await this.prisma.delivery.findUnique({
         where: { idempotencyKey: dto.idempotencyKey.trim() },
         include: {
-          customer: true,
+          customer: { include: { area: true } },
           items: { include: { product: true } },
           payments: true,
         },
@@ -408,9 +412,23 @@ export class DeliveriesService {
     // 10. Persist delivery, items, and payments atomically in one transaction
     try {
       const saved = await this.prisma.$transaction(async (tx) => {
+        const year = deliveryDate.getFullYear();
+        const startOfYear = new Date(`${year}-01-01T00:00:00.000Z`);
+        const endOfYear = new Date(`${year + 1}-01-01T00:00:00.000Z`);
+        const yearCount = await tx.delivery.count({
+          where: {
+            deliveryDate: {
+              gte: startOfYear,
+              lt: endOfYear,
+            },
+          },
+        });
+        const invoiceNumber = `MST-INV-${year}-${String(yearCount + 1).padStart(4, '0')}`;
+
         const delivery = await tx.delivery.create({
           data: {
             customerId: customer.id,
+            invoiceNumber,
             deliveryDate,
             outerBoxes: dto.outerBoxes !== undefined ? dto.outerBoxes : null,
             totalAmountPaise,
@@ -448,7 +466,7 @@ export class DeliveriesService {
         return tx.delivery.findUniqueOrThrow({
           where: { id: delivery.id },
           include: {
-            customer: true,
+            customer: { include: { area: true } },
             items: { include: { product: true } },
             payments: true,
           },
@@ -568,7 +586,7 @@ export class DeliveriesService {
       return tx.delivery.findUniqueOrThrow({
         where: { id: deliveryId },
         include: {
-          customer: true,
+          customer: { include: { area: true } },
           items: { include: { product: true } },
           payments: true,
         },
@@ -601,7 +619,7 @@ export class DeliveriesService {
     const deliveries = await this.prisma.delivery.findMany({
       where,
       include: {
-        customer: true,
+        customer: { include: { area: true } },
         items: { include: { product: true } },
         payments: true,
       },
@@ -621,7 +639,7 @@ export class DeliveriesService {
     const delivery = await this.prisma.delivery.findUnique({
       where: { id },
       include: {
-        customer: true,
+        customer: { include: { area: true } },
         items: { include: { product: true } },
         payments: true,
       },
@@ -640,7 +658,7 @@ export class DeliveriesService {
 
   private formatDeliveryDetail(
     delivery: Delivery & {
-      customer: Customer;
+      customer: CustomerWithArea;
       items: (DeliveryItem & { product: Product })[];
       payments: Payment[];
     },
@@ -664,9 +682,13 @@ export class DeliveriesService {
     }
 
     const isItemized = Boolean(delivery.items && delivery.items.length > 0);
+    const invoiceNumber =
+      delivery.invoiceNumber ||
+      `MST-INV-${delivery.deliveryDate ? new Date(delivery.deliveryDate).getFullYear() : '2026'}-${delivery.id.slice(0, 8).toUpperCase()}`;
 
     return {
       id: delivery.id,
+      invoiceNumber,
       customerId: delivery.customerId,
       customerName: delivery.customer.name,
       deliveryDate: delivery.deliveryDate,
