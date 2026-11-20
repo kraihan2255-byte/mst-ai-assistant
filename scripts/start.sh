@@ -28,7 +28,11 @@ if ! "${PSQL_BIN}" -d mst_tengapal -c "SELECT 1;" > /dev/null 2>&1; then
   sleep 2
 fi
 
-# 2. Check if backend is already running
+# 2. Apply database migrations to local PostgreSQL
+echo "Applying database migrations..."
+(cd "${ROOT_DIR}/backend" && npx prisma migrate deploy)
+
+# 3. Check if backend is already running
 if [ -f "${PID_FILE}" ]; then
   OLD_PID="$(cat "${PID_FILE}")"
   if ps -p "${OLD_PID}" > /dev/null 2>&1; then
